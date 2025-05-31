@@ -1,0 +1,31 @@
+//
+// SPDX-FileCopyrightText: 2024 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_binary {
+    name: "android.hardware.ir-service.lineage",
+    relative_install_path: "hw",
+    vendor: true,
+    init_rc: ["android.hardware.ir-service.lineage.rc"],
+    vintf_fragments: ["android.hardware.ir-service.lineage.xml"],
+    srcs: [
+        "ConsumerIr.cpp",
+        "service.cpp",
+    ],
+    shared_libs: [
+        "libbase",
+        "libbinder_ndk",
+        "android.hardware.ir-V1-ndk",
+    ],
+    static_libs: [
+        "libvendor.lineage.ir.Props",
+    ],
+}
+
+sysprop_library {
+    name: "vendor.lineage.ir.Props",
+    srcs: ["ir.sysprop"],
+    property_owner: "Vendor",
+    vendor: true,
+}
