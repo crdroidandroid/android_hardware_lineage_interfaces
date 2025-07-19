@@ -10,10 +10,31 @@
 
 #include <android-base/logging.h>
 
+#include <filesystem>
+
 namespace aidl {
 namespace android {
 namespace hardware {
 namespace light {
+
+namespace {
+
+std::vector<std::string> getSubDirs(const std::string& path) {
+    std::vector<std::string> subdirs;
+    std::filesystem::path p(path);
+
+    CHECK(std::filesystem::is_directory(p));
+
+    for (const auto& entry : std::filesystem::directory_iterator(p)) {
+        if (entry.is_directory()) {
+            subdirs.push_back(entry.path().filename().string());
+        }
+    }
+
+    return subdirs;
+}
+
+}  // namespace
 
 static const std::string kBacklightDevices[] = {
         "backlight",
@@ -32,6 +53,19 @@ static std::vector<BacklightDevice> getBacklightDevices() {
             devices.push_back(backlight);
         }
     }
+
+#ifdef SCAN_FOR_BACKLIGHT_DEVICES
+    if (devices.empty()) {
+        LOG(INFO) << "Scanning for backlight devices.";
+        for (const auto& device : getSubDirs("/sys/class/backlight/")) {
+            BacklightDevice backlight(device);
+            if (backlight.exists()) {
+                LOG(INFO) << "Found backlight device: " << backlight.getName();
+                devices.push_back(backlight);
+            }
+        }
+    }
+#endif
 
     return devices;
 }
@@ -96,6 +130,7 @@ static std::vector<LedDevice> getKeyboardLedDevices() {
 
 static const std::string kRgbLedDevices[][4] = {
         {"red", "green", "blue", "/sys/class/leds/rgb/rgb_blink"},
+        {"red:status", "green:status", "blue:status", ""},
 };
 
 static std::vector<RgbLedDevice> getNotificationRgbLedDevices() {
@@ -121,6 +156,7 @@ static const std::string kNotificationLedDevices[] = {
         "charging",
         "left",
         "white",
+        "white:status",
 };
 
 static std::vector<LedDevice> getNotificationLedDevices() {
